@@ -1,10 +1,15 @@
+//go:generate goversioninfo -icon=bl.ico
+
 package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 func work() ProfileStruct {
@@ -36,12 +41,36 @@ func work() ProfileStruct {
 func main() {
 	// инициализация, чтение конфига
 	Init()
-	// Подключиться к com
-	con, err := connect(C.ComPort, C.BaudRate)
-	if err != nil {
-		log.Fatal(err)
+	com := C.ComPort
+	var con io.ReadWriteCloser
+	var flagConnnect bool = false
+	var err error
+	for flagConnnect == false {
+		log.Println("Подключение к порту", com)
+		con, err = connect(com, C.BaudRate)
+		if err != nil {
+			log.Println("Не удалось подключиться к порту", com)
+			log.Println("Выберите другой порт, из этих:")
+			serials := readPorts()
+			var num int
+			for i, name := range serials {
+				fmt.Println(i, "-", name)
+			}
+
+			fmt.Scan(&num)
+			com = serials[num]
+			fmt.Println("Выбран порт", com)
+			viper.Set("ComPort", com)
+			viper.WriteConfig()
+		} else {
+			flagConnnect = true
+		}
+
 	}
-	log.Println("Подключено успешно к порту:", C.ComPort)
+	// Подключиться к com
+	// con, err := connect(com, C.BaudRate)
+
+	log.Println("Подключено успешно к порту:", com)
 
 	for {
 		log.Println("Определение активного окна")

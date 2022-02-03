@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/tarm/serial"
+	"golang.org/x/sys/windows/registry"
 )
 
 func connect(port string, baud int) (io.ReadWriteCloser, error) {
@@ -50,5 +51,41 @@ func writeToCom(red, green, blue, blink int, con io.ReadWriteCloser) {
 	// log.Println("Отправлено байт:", n)
 
 	time.Sleep(1 * time.Second)
+
+}
+
+// Получить список COM-портов  в windows
+func readPorts() []string {
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM", registry.QUERY_VALUE)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer k.Close()
+
+	ki, err := k.Stat()
+
+	if err != nil {
+		log.Fatal(err)
+
+	}
+
+	// fmt.Printf("Subkey %d ValueCount %d\n", ki.SubKeyCount, ki.ValueCount)
+	s, err := k.ReadValueNames(int(ki.ValueCount))
+	if err != nil {
+		log.Fatal(err)
+	}
+	kvalue := make([]string, ki.ValueCount)
+
+	for i, test := range s {
+		q, _, err := k.GetStringValue(test)
+		if err != nil {
+			log.Fatal(err)
+		}
+		kvalue[i] = q
+	}
+
+	// fmt.Printf("%s \n", kvalue)
+	return kvalue
 
 }

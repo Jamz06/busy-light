@@ -2,10 +2,9 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
+	"log"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 )
 
@@ -57,18 +56,24 @@ func Init() {
 
 	readConf()
 
-	// Создать канал, для передачи сигнала в горутину
-	c := make(chan os.Signal, 1)
-	// Получить сигнал на reload от системы
-	signal.Notify(c, syscall.SIGHUP)
+	// // Создать канал, для передачи сигнала в горутину
+	// c := make(chan os.Signal, 1)
+	// // Получить сигнал на reload от системы
+	// signal.Notify(c, syscall.SIGHUP)
 
-	// Создатить горутину, которая будет следить за сигналом
-	go func() {
-		for sig := range c {
-			println(sig)
-			fmt.Println("Получен сигнал к перезагрузке конфигураци")
-			readConf()
-		}
-	}()
+	// // Создатить горутину, которая будет следить за сигналом
+	// go func() {
+	// 	for sig := range c {
+	// 		println(sig)
+	// 		fmt.Println("Получен сигнал к перезагрузке конфигураци")
+	// 		readConf()
+	// 	}
+	// }()
+
+	viper.WatchConfig()
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		log.Println("Конфигурация поменялась:", e.Name)
+		readConf()
+	})
 
 }
